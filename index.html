@@ -56,7 +56,7 @@ html, body { width: 100%; height: 100%; font-family: Arial, sans-serif; overflow
 window.addEventListener('load', function() {
   var packSquare = [35.5701, -82.5515];
   var map = L.map('map', { center: packSquare, zoom: 12, zoomControl: true });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(map);
