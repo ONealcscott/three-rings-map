@@ -1,0 +1,109 @@
+html<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Rings — Asheville Area Map | Your Asheville Connection</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; font-family: Arial, sans-serif; overflow: hidden; }
+#map { width: 100vw; height: 100vh; }
+#title-overlay { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; text-align: center; pointer-events: none; }
+#title-overlay h1 { font-family: Georgia, serif; font-size: clamp(18px, 2.5vw, 30px); color: #C9A84C; letter-spacing: 0.04em; text-shadow: 0 2px 12px rgba(0,0,0,0.9); white-space: nowrap; margin: 0; }
+#title-overlay p { font-size: clamp(11px, 1.2vw, 14px); color: rgba(255,255,255,0.65); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
+#legend { position: absolute; bottom: 56px; left: 20px; z-index: 1000; background: rgba(8,15,28,0.92); border: 1.5px solid rgba(201,168,76,0.4); border-radius: 10px; padding: 14px 18px; min-width: 205px; }
+#legend h3 { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #C9A84C; margin-bottom: 12px; }
+.leg-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; color: rgba(255,255,255,0.85); }
+.leg-circle { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid; flex-shrink: 0; }
+.lc-r1 { border-color: #E8A020; background: rgba(232,160,32,0.15); }
+.lc-r2 { border-color: #2A7DC9; background: rgba(42,125,201,0.15); }
+.lc-r3 { border-color: #2E9B5A; background: rgba(46,155,90,0.15); }
+.leg-label span { display: block; font-size: 11px; color: rgba(255,255,255,0.45); }
+#brand-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 46px; background: rgba(8,15,28,0.96); border-top: 2px solid #C9A84C; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; font-size: 13px; color: #8A9BB0; z-index: 1000; }
+#brand-bar b { color: #C9A84C; }
+.pack-pulse { width: 16px; height: 16px; border-radius: 50%; background: #C9A84C; border: 3px solid #fff; animation: packpulse 2s ease-out infinite; }
+@keyframes packpulse { 0% { box-shadow: 0 0 0 0 rgba(201,168,76,0.7); } 70% { box-shadow: 0 0 0 14px rgba(201,168,76,0); } 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); } }
+.leaflet-popup-content-wrapper { background: rgba(10,20,38,0.97) !important; border: 1.5px solid rgba(201,168,76,0.6) !important; border-radius: 10px !important; color: #fff !important; }
+.leaflet-popup-content { color: #fff !important; font-family: Arial, sans-serif !important; font-size: 13px !important; line-height: 1.6 !important; margin: 12px 16px !important; }
+.leaflet-popup-tip { background: rgba(10,20,38,0.97) !important; }
+.leaflet-popup-close-button { color: #C9A84C !important; }
+.pop-title { font-weight: 700; font-size: 15px; color: #C9A84C; margin-bottom: 3px; }
+.pop-ring { font-size: 11px; color: rgba(255,255,255,0.45); margin-bottom: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
+.pop-data { color: rgba(255,255,255,0.82); }
+.pop-highlight { color: #6BCB77; font-weight: 700; }
+.pop-alert { color: #FF8C6B; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="title-overlay">
+  <h1>The Three Rings of Asheville &amp; Beyond</h1>
+  <p>Western North Carolina Market Framework &nbsp;·&nbsp; March 2026</p>
+</div>
+<div id="legend">
+  <h3>The Three Rings</h3>
+  <div class="leg-row"><div class="leg-circle lc-r1"></div><div class="leg-label">Ring 1 — The Core<span>0–8 min · Montford, W. Asheville, Downtown</span></div></div>
+  <div class="leg-row"><div class="leg-circle lc-r2"></div><div class="leg-label">Ring 2 — Commuter Circle<span>8–20 min · Arden, Weaverville, Black Mtn</span></div></div>
+  <div class="leg-row"><div class="leg-circle lc-r3"></div><div class="leg-label">Ring 3 — The Beyond<span>20+ min · 6 counties</span></div></div>
+</div>
+<div id="brand-bar">
+  <span><b>O'Neal Scott</b> &nbsp;|&nbsp; eXp Realty &nbsp;|&nbsp; License #349656</span>
+  <span>Your Asheville Connection &nbsp;·&nbsp; yourashevilleconnection.com</span>
+</div>
+<script>
+window.addEventListener('load', function() {
+  var packSquare = [35.5701, -82.5515];
+  var map = L.map('map', { center: packSquare, zoom: 10, zoomControl: true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+  L.circle(packSquare, { radius: 8000, color: '#E8A020', weight: 3, opacity: 0.9, fillColor: '#E8A020', fillOpacity: 0.07 }).addTo(map);
+  L.circle(packSquare, { radius: 20000, color: '#2A7DC9', weight: 2.5, opacity: 0.85, fillColor: '#2A7DC9', fillOpacity: 0.06 }).addTo(map);
+  L.circle(packSquare, { radius: 38000, color: '#2E9B5A', weight: 2.5, opacity: 0.8, fillColor: '#2E9B5A', fillOpacity: 0.05 }).addTo(map);
+  var packIcon = L.divIcon({ className: '', html: '<div class="pack-pulse"></div>', iconSize: [16,16], iconAnchor: [8,8] });
+  L.marker(packSquare, { icon: packIcon }).addTo(map).bindPopup('<div class="pop-title">Pack Square</div><div class="pop-ring">Ground Zero</div><div class="pop-data">Heart of downtown Asheville.<br>All rings radiate from this point.</div>');
+  function dot(color, size) {
+    return L.divIcon({ className: '', html: '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+color+';border:2.5px solid rgba(255,255,255,0.85);box-shadow:0 0 8px rgba(0,0,0,0.6);cursor:pointer;"></div>', iconSize: [size,size], iconAnchor: [size/2,size/2] });
+  }
+  [
+    { name:'Montford', coords:[35.5820,-82.5580], data:'Historic Victorian district<br>Median: $685,000+ · DOM: 105 days' },
+    { name:'West Asheville', coords:[35.5680,-82.5820], data:'Arts & restaurant district<br>Median: $545,000+ · DOM: 88 days' },
+    { name:'Kenilworth', coords:[35.5560,-82.5420], data:'Established residential<br>Median: $625,000+ · DOM: 98 days' },
+    { name:'Lakeview Park', coords:[35.5780,-82.5350], data:'Bungalow neighborhood · Near downtown core' }
+  ].forEach(function(loc) {
+    L.marker(loc.coords, { icon: dot('#E8A020', 13) }).addTo(map).bindPopup('<div class="pop-title">'+loc.name+'</div><div class="pop-ring">Ring 1 — The Core</div><div class="pop-data">'+loc.data+'</div>');
+  });
+  [
+    { name:'Weaverville', coords:[35.6920,-82.5580], data:'Growing suburb north of AVL<br>Median: $480,000 · DOM: 72 days · YoY: +5.1%' },
+    { name:'Black Mountain', coords:[35.6145,-82.3240], data:'Arts town east of AVL<br>Median: $445,000 · DOM: 79 days · YoY: +3.8%' },
+    { name:'Arden', coords:[35.4750,-82.5540], data:'South Buncombe suburban<br>Median: $465,000 · DOM: 68 days · YoY: +4.2%' },
+    { name:'Candler', coords:[35.5380,-82.6820], data:'West of AVL, fastest appreciation<br>Median: $395,000 · DOM: 61 days · YoY: +6.4%' },
+    { name:'Swannanoa', coords:[35.5980,-82.4020], data:'East of AVL along river corridor<br>Median: $375,000 · DOM: 84 days' }
+  ].forEach(function(loc) {
+    L.marker(loc.coords, { icon: dot('#2A7DC9', 12) }).addTo(map).bindPopup('<div class="pop-title">'+loc.name+'</div><div class="pop-ring">Ring 2 — Commuter Circle</div><div class="pop-data">'+loc.data+'</div>');
+  });
+  [
+    { name:'Mars Hill', county:'Madison Co.', coords:[35.8270,-82.5510], data:'Median: $478,076 · DOM: 178 days<br><span class="pop-alert">★ Strongest buyer market in region</span>' },
+    { name:'Waynesville', county:'Haywood Co.', coords:[35.4890,-82.9870], data:'Median: $395,229 · DOM: 73 days<br>Arts community + outdoor lifestyle' },
+    { name:'Hendersonville', county:'Henderson Co.', coords:[35.3165,-82.4610], data:'Median: $465,000 · DOM: 62 days<br><span class="pop-highlight">★ Fastest-moving Ring 3 market</span>' },
+    { name:'Brevard', county:'Transylvania Co.', coords:[35.2335,-82.7340], data:'Median: $510,000 · DOM: 74 days<br>Waterfalls + arts premium' },
+    { name:'Burnsville', county:'Yancey Co.', coords:[35.9165,-82.3020], data:'Median: $455,166 · DOM: 77 days<br>Rural mountain · remote work + land buyers' },
+    { name:'Marion', county:'McDowell Co.', coords:[35.6815,-81.9940], data:'Median: $297,687 · DOM: 69 days<br><span class="pop-highlight">★ Best value in the region</span>' }
+  ].forEach(function(loc) {
+    L.marker(loc.coords, { icon: dot('#2E9B5A', 14) }).addTo(map).bindPopup('<div class="pop-title">'+loc.name+'</div><div class="pop-ring">Ring 3 — The Beyond · '+loc.county+'</div><div class="pop-data">'+loc.data+'</div>');
+  });
+  [
+    { coords:[35.6420,-82.5515], label:'RING 1 · THE CORE', bg:'rgba(232,160,32,0.88)', color:'#1a0e00', anchor:[62,10] },
+    { coords:[35.7480,-82.5515], label:'RING 2 · COMMUTER CIRCLE', bg:'rgba(42,125,201,0.88)', color:'#fff', anchor:[82,10] },
+    { coords:[35.8750,-82.5515], label:'RING 3 · THE BEYOND', bg:'rgba(46,155,90,0.88)', color:'#fff', anchor:[72,10] }
+  ].forEach(function(r) {
+    L.marker(r.coords, { icon: L.divIcon({ className:'', html:'<div style="background:'+r.bg+';color:'+r.color+';font-family:Arial;font-size:11px;font-weight:700;letter-spacing:0.08em;padding:3px 10px;border-radius:12px;white-space:nowrap;">'+r.label+'</div>', iconAnchor:r.anchor }), interactive:false }).addTo(map);
+  });
+  map.zoomControl.setPosition('topright');
+});
+</script>
+</body>
+</html>
